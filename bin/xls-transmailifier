@@ -1,0 +1,76 @@
+#!/usr/bin/env php
+<?php
+
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Worksheet\Row;
+use Symfony\Component\Yaml\Yaml;
+
+require __DIR__ .'/../vendor/autoload.php';
+
+// TODO: find initial value --find-initial
+// TODO: add mail support
+// TODO: cache, deduplicate?
+
+// TODO: migrate to Symfony console
+$preset = $_SERVER['argv'][1];
+$file = realpath($_SERVER['argv'][2]);
+
+// TODO: validate config here
+$config = Yaml::parseFile('config.yaml');
+$reader = IOFactory::createReaderForFile($file);
+$reader->setReadDataOnly(true);
+$spreadsheet = $reader->load($file);
+$sheet = $spreadsheet->getActiveSheet();
+
+$account = $config['accounts'][$preset];
+
+if (isset($account['validator'])) {
+    $cell = $sheet->getCell($account['validator']['cell']);
+
+    $expectedValue = $account['validator']['value'];
+    $actualValue = $cell->getValue();
+    if ($expectedValue !== $actualValue) {
+        throw new \RuntimeException(sprintf('Validator cell does not match: value "%1$s" expected but got "%2$s". Wrong file given?', $expectedValue, $actualValue));
+    }
+}
+
+$reader = function(Row $row) use ($sheet, $account) : array {
+    $data = [];
+    $rowIndex = $row->getRowIndex();
+    foreach ($account['data'] as $name => $spec) {
+        if (is_array($spec)) {
+            $data[$name] = $sheet->getCell(\sprintf('%1$s%2$d', $account['data'][$name]['column'], $rowIndex))->getValue();
+        } else {
+            $data[$name] = $spec;
+        }
+    }
+
+    return $data;
+};
+
+$iterator = $sheet->getRowIterator($account['start']);
+
+$fh = fopen('php://STDOUT', 'ab+');
+fputcsv($fh, array_keys($account['data']));
+
+foreach ($iterator as $row) {
+    $data = $reader($row);
+    
+    $data['date'] = \DateTime::createFromFormat($account['data']['date']['format'], $data['date'])->format('Y-m-d H:i:s');
+
+    // make -10.00HRK expense 10.00HRK income and vice-versa
+    $income = $data['income'];
+    $expense = $data['expense'];
+    if ($data['expense'] < 0) {
+        $income = abs($data['expense']);
+        $expense = 0;
+    }
+    if ($data['income'] < 0) {
+        $expense = abs($data['income']);
+        $income = 0;
+    }
+    $data['income'] = $income;
+    $data['expense'] = $expense;
+
+    fputcsv($fh, array_values($data));
+}

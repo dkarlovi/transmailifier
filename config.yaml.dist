@@ -1,0 +1,18 @@
+mailer: ~
+accounts:
+  some account name:
+    start: 6
+    validator:
+      cell: D1
+      value: Expected value in that cell for that file
+    data:
+      date:
+        column: A
+        format: d.m.Y.
+      income:
+        column: H
+      expense:
+        column: G
+      currency: HRK
+      note:
+        column: B
