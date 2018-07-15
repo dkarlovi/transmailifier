@@ -1,18 +1,86 @@
-mailer: ~
-accounts:
-  some account name:
-    start: 6
-    validator:
-      cell: D1
-      value: Expected value in that cell for that file
-    data:
-      date:
-        column: A
-        format: d.m.Y.
-      income:
-        column: H
-      expense:
-        column: G
-      currency: HRK
-      note:
-        column: B
+mailer:
+  host: smtp.gmail.com
+  port: 587
+  security: tls
+  auth:
+    mode: login
+    username: example@gmail.com
+    password: s3c00r3
+  sender_address: example@gmail.com
+reader:
+  profiles:
+    accountA:
+      config:
+        reverse: true
+        validator:
+          cell: D1
+          value: My account A
+      data:
+        rows:
+          start: 6
+        columns:
+          date:
+            column: A
+            format: d.m.Y.
+          income:
+            column: H
+          expense:
+            column: G
+          state:
+            column: I
+          currency: HRK
+          note:
+            column: B
+      mails:
+        - accountA@example.com
+        - archive@example.com
+    accountB:
+      config:
+        reverse: true
+        validator:
+          cell: D1
+          value: My account B
+      data:
+        rows:
+          start: 8
+        columns:
+          date:
+            column: A
+            format: d.m.Y.
+          income:
+            column: D
+          expense:
+            column: E
+          state:
+            column: F
+          currency: EUR
+          note:
+            column: B
+      mails:
+        - accountB@example.com
+        - archive@example.com
+    accountC:
+      config:
+        reverse: true
+        validator:
+          cell: D1
+          value: My account C
+      data:
+        rows:
+          start: 10
+        columns:
+          date:
+            column: A
+            format: d.m.Y.
+          income:
+            column: D
+          expense:
+            column: E
+          state:
+            column: F
+          currency: HRK
+          note:
+            column: B
+      mails:
+        - accountC@example.com
+        - archive@example.com
