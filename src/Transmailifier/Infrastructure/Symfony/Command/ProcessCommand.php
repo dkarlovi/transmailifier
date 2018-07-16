@@ -2,6 +2,15 @@
 
 declare(strict_types=1);
 
+/*
+ * This file is part of the transmailifier project.
+ *
+ * (c) Dalibor Karlović <dalibor@flexolabs.io>
+ *
+ * This source file is subject to the MIT license that is bundled
+ * with this source code in the file LICENSE.
+ */
+
 namespace Dkarlovi\Transmailifier\Infrastructure\Symfony\Command;
 
 use Dkarlovi\Transmailifier\Processor;
@@ -29,7 +38,7 @@ class ProcessCommand extends Command
      */
     public function __construct(Processor $processor)
     {
-        parent::__construct('processUnprocessedTransactions');
+        parent::__construct('process');
 
         $this->processor = $processor;
     }
@@ -47,7 +56,7 @@ class ProcessCommand extends Command
     /**
      * {@inheritdoc}
      */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): void
     {
         $style = new SymfonyStyle($input, $output);
         $ledger = $this->processor->read(

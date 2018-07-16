@@ -1,0 +1,9 @@
+{
+    "main": "bin/transmailifier",
+    "chmod": "0755",
+    "directories": [
+        "src/",
+        "vendor/"
+    ],
+    "datetime": "release-date"
+}
