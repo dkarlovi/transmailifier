@@ -2,6 +2,15 @@
 
 declare(strict_types = 1);
 
+$header = <<<'EOF'
+This file is part of the transmailifier project.
+
+(c) Dalibor Karlović <dalibor@flexolabs.io>
+
+This source file is subject to the MIT license that is bundled
+with this source code in the file LICENSE.
+EOF;
+
 $finder = PhpCsFixer\Finder::create()
     ->exclude('vendor')
     ->in(__DIR__);
@@ -11,9 +20,13 @@ return PhpCsFixer\Config::create()
     ->setUsingCache(false)
     ->setRules(
         [
+            '@PHP71Migration:risky' => true,
+            '@PHP70Migration:risky' => true,
+            '@PHP56Migration' => true,
             '@Symfony' => true,
-            '@PHPUnit60Migration:risky' => true,
+            '@Symfony:risky' => true,
             'array_syntax' => ['syntax' => 'short'],
+            'header_comment' => ['header' => $header],
             'declare_strict_types' => true,
             'dir_constant' => true,
             'general_phpdoc_annotation_remove' => ['@author'],

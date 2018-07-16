@@ -2,6 +2,15 @@
 
 declare(strict_types=1);
 
+/*
+ * This file is part of the transmailifier project.
+ *
+ * (c) Dalibor Karlović <dalibor@flexolabs.io>
+ *
+ * This source file is subject to the MIT license that is bundled
+ * with this source code in the file LICENSE.
+ */
+
 namespace Dkarlovi\Transmailifier\Infrastructure\Symfony\Console;
 
 use Dkarlovi\Transmailifier\Infrastructure\Symfony\Command\FindInitialAmountCommand;
@@ -34,9 +43,15 @@ class Application extends BaseApplication
      */
     protected function getDefaultCommands(): array
     {
-        // TODO: temporary, move to a proper path
+        // TODO: temporary
+        $root = shell_exec('echo -n ${HOME}/.config/transmailifier');
+        if (null === $root) {
+            throw new \RuntimeException('Unable to find Transmailifier root');
+        }
+
         // TODO: validate config
-        $config = Yaml::parseFile('config.yaml');
+        $config = Yaml::parseFile($root.'/config.yaml');
+        $data = $root.'/transmailifier.sqlite';
 
         $transporter = new \Swift_SmtpTransport(
             $config['mailer']['host'],
@@ -51,7 +66,7 @@ class Application extends BaseApplication
         // no DIC available for Symfony CLI commands :(
         $processor = new Processor(
             new Reader($config['reader']),
-            new Storage(shell_exec('echo -n ${HOME}/.config/transmailifier/transactions.sqlite')),
+            new Storage($data),
             new Mailer(
                 $config['mailer']['sender_address'],
                 new \Swift_Mailer($transporter),
