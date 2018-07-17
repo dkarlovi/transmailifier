@@ -13,8 +13,6 @@ declare(strict_types=1);
 
 namespace Dkarlovi\Transmailifier;
 
-use Doctrine\DBAL\Connection;
-
 /**
  * Class Storage.
  */
@@ -26,7 +24,7 @@ class Storage
     private $path;
 
     /**
-     * @var Connection
+     * @var \PDO
      */
     private $connection;
 
@@ -87,26 +85,24 @@ class Storage
      */
     private function isTransactionProcessed(Transaction $transaction): bool
     {
-        $result = $this->getConnection()->executeQuery(
-            'SELECT COUNT(*) AS cnt FROM `transactions` WHERE `id` = :id AND `processed_at` IS NOT NULL',
-            [
-                'id' => $transaction->getIdentifier(),
-            ]
+        $statement = $this->getConnection()->prepare(
+            'SELECT COUNT(*) AS cnt FROM `transactions` WHERE `id` = :id AND `processed_at` IS NOT NULL'
         );
+        $statement->execute([
+            'id' => $transaction->getIdentifier(),
+        ]);
 
-        return (bool) $result->fetchColumn();
+        return (bool) $statement->fetchColumn();
     }
 
     /**
-     * @throws \Doctrine\DBAL\DBALException
-     *
-     * @return Connection
+     * @return \PDO
      */
-    private function getConnection(): Connection
+    private function getConnection(): \PDO
     {
         if (null === $this->connection) {
             shell_exec('mkdir -p '.\dirname($this->path));
-            $this->connection = \Doctrine\DBAL\DriverManager::getConnection(['url' => 'sqlite:///'.$this->path]);
+            $this->connection = new \PDO('sqlite://'.$this->path);
 
             $this->ensureSchema($this->connection);
         }
@@ -115,18 +111,16 @@ class Storage
     }
 
     /**
-     * @param Connection $connection
-     *
-     * @throws \Doctrine\DBAL\DBALException
+     * @param \PDO $connection
      */
-    private function ensureSchema(Connection $connection): void
+    private function ensureSchema(\PDO $connection): void
     {
         $schema = [
             'CREATE TABLE IF NOT EXISTS `transactions` (`id` CHAR(32) PRIMARY KEY, `created_at` DATETIME NOT NULL, `processed_at` DATETIME)',
         ];
 
         foreach ($schema as $query) {
-            $connection->executeQuery($query);
+            $connection->exec($query);
         }
     }
 }
