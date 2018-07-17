@@ -1,9 +1,7 @@
 {
-    "main": "bin/transmailifier",
-    "chmod": "0755",
-    "directories": [
-        "src/",
-        "vendor/"
+    "files": [
+        "src/bootstrap.php"
     ],
-    "datetime": "release-date"
+    "chmod": "0755",
+    "compression": "GZ"
 }
