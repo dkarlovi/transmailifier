@@ -13,10 +13,15 @@ declare(strict_types=1);
 
 namespace Dkarlovi\Transmailifier;
 
-use Dkarlovi\Transmailifier\Infrastructure\PhpSpreadsheet\ReverseRowIterator;
-use PhpOffice\PhpSpreadsheet\IOFactory;
-use PhpOffice\PhpSpreadsheet\Worksheet\Row;
-use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
+use PhpOffice\PhpSpreadsheet\Exception;
+use Xezilaires\Bridge\PhpSpreadsheet\Spreadsheet;
+use Xezilaires\Denormalizer;
+use Xezilaires\Metadata\ColumnReference;
+use Xezilaires\Metadata\HeaderReference;
+use Xezilaires\Metadata\Mapping;
+use Xezilaires\Metadata\Reference;
+use Xezilaires\SpreadsheetIterator;
 
 /**
  * Class XlsLedger.
@@ -24,9 +29,9 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 class XlsLedger implements Ledger
 {
     /**
-     * @var string
+     * @var Spreadsheet
      */
-    private $path;
+    private $spreadsheet;
 
     /**
      * @var array
@@ -34,9 +39,9 @@ class XlsLedger implements Ledger
     private $profile;
 
     /**
-     * @var Worksheet
+     * @var Denormalizer
      */
-    private $sheet;
+    private $denormalizer;
 
     /**
      * @var \Iterator
@@ -44,27 +49,19 @@ class XlsLedger implements Ledger
     private $iterator;
 
     /**
-     * @var int
-     */
-    private $key = 0;
-
-    /**
      * @var LedgerSummary
      */
     private $summary;
 
-    /**
-     * @param string $path
-     * @param array  $profile
-     */
-    public function __construct(string $path, array $profile)
+    public function __construct(\SplFileObject $path, array $profile, Denormalizer $denormalizer)
     {
-        $this->path = $path;
+        $this->spreadsheet = new Spreadsheet($path);
         $this->profile = $profile;
+        $this->denormalizer = $denormalizer;
     }
 
     /**
-     * @return string
+     * {@inheritdoc}
      */
     public function getCurrency(): string
     {
@@ -72,7 +69,7 @@ class XlsLedger implements Ledger
     }
 
     /**
-     * @return LedgerSummary
+     * {@inheritdoc}
      */
     public function getSummary(): LedgerSummary
     {
@@ -83,13 +80,16 @@ class XlsLedger implements Ledger
         return $this->summary;
     }
 
+    /**
+     * {@inheritdoc}
+     */
     public function getDescription(): string
     {
         return $this->profile['config']['validator']['value'];
     }
 
     /**
-     * @return array
+     * {@inheritdoc}
      */
     public function getNotificationAddresses(): array
     {
@@ -97,24 +97,18 @@ class XlsLedger implements Ledger
     }
 
     /**
-     * @param string $coordinates
-     *
-     * @return null|string|int|float
+     * @return null|float|int|string
      */
     public function fetch(string $coordinates)
     {
-        $sheet = $this->getSheet();
         try {
-            $cell = $sheet->getCell($coordinates);
-        } catch (\PhpOffice\PhpSpreadsheet\Exception $exception) {
-            throw new \RuntimeException('Value not found at coordinates: '.$exception->getMessage());
+            [$columnName, $rowIndex] = Coordinate::coordinateFromString($coordinates);
+        } catch (Exception $exception) {
+            return null;
         }
+        $row = $this->spreadsheet->getRow((int) $rowIndex);
 
-        if (null !== $cell) {
-            return $cell->getValue();
-        }
-
-        return null;
+        return $row[$columnName] ?? null;
     }
 
     /**
@@ -122,39 +116,10 @@ class XlsLedger implements Ledger
      */
     public function current(): Transaction
     {
-        $data = $this->readRow($this->getIterator()->current());
+        /** @var Transaction $transaction */
+        $transaction = $this->getIterator()->current();
 
-        if (false === ($data['income'] xor $data['expense'])) {
-            throw new \RuntimeException('Either expense or income must be set, but not both');
-        }
-
-        switch (true) {
-            case $data['expense']:
-                if ($data['expense'] < 0) {
-                    // this is actually income, but written as -10.00HRK expense
-                    $amount = abs($data['expense']);
-                } else {
-                    $amount = -$data['expense'];
-                }
-                break;
-            case $data['income']:
-                if ($data['income'] < 0) {
-                    // this is actually expense, but written as -10.00HRK income
-                    $amount = -abs($data['income']);
-                } else {
-                    $amount = $data['income'];
-                }
-                break;
-            default:
-                throw new \RuntimeException('No income or expense set!');
-        }
-
-        $date = \DateTime::createFromFormat($this->profile['data']['columns']['date']['format'], $data['date']);
-        if (false === $date) {
-            throw new \RuntimeException(sprintf('Invalid date %1$s given', $data['date']));
-        }
-
-        return new Transaction($data['state'], $amount, $data['currency'], $date, $data['note']);
+        return $transaction;
     }
 
     /**
@@ -162,8 +127,6 @@ class XlsLedger implements Ledger
      */
     public function next(): void
     {
-        ++$this->key;
-
         $this->getIterator()->next();
     }
 
@@ -172,7 +135,7 @@ class XlsLedger implements Ledger
      */
     public function key(): int
     {
-        return $this->key;
+        return $this->getIterator()->key();
     }
 
     /**
@@ -188,71 +151,50 @@ class XlsLedger implements Ledger
      */
     public function rewind(): void
     {
-        $this->key = 0;
-
         $this->getIterator()->rewind();
     }
 
-    /**
-     * @return Worksheet
-     */
-    private function getSheet(): Worksheet
-    {
-        if (null === $this->sheet) {
-            try {
-                /**
-                 * @var \PhpOffice\PhpSpreadsheet\Reader\IReader
-                 */
-                $reader = IOFactory::createReaderForFile($this->path);
-                $spreadsheet = $reader->load($this->path);
-                $this->sheet = $spreadsheet->getActiveSheet();
-            } catch (\PhpOffice\PhpSpreadsheet\Reader\Exception $exception) {
-                throw new \RuntimeException('Failed reading the XLS file: '.$exception->getMessage());
-            } catch (\PhpOffice\PhpSpreadsheet\Exception $exception) {
-                throw new \RuntimeException('Failed opening the XLS file active sheet: '.$exception->getMessage());
-            }
-        }
-
-        return $this->sheet;
-    }
-
-    /**
-     * @return \Iterator
-     */
     private function getIterator(): \Iterator
     {
         if (null === $this->iterator) {
-            $sheet = $this->getSheet();
-            $iterator = $sheet->getRowIterator($this->profile['data']['rows']['start']);
+            $this->iterator = new SpreadsheetIterator(
+                $this->spreadsheet,
+                new Mapping(
+                    Transaction::class,
+                    [
+                        'time' => $this->buildReference($this->profile['data']['columns']['date']),
+                        'state' => $this->buildReference($this->profile['data']['columns']['state']),
+                        'expense' => $this->buildReference($this->profile['data']['columns']['expense']),
+                        'income' => $this->buildReference($this->profile['data']['columns']['income']),
+                        // 'currency' => $this->buildReference($this->profile['data']['columns']['currency']),
+                        'note' => $this->buildReference($this->profile['data']['columns']['note']),
+                    ],
+                    [
+                        'start' => $this->profile['data']['rows']['start'] ?? 1,
+                        'reverse' => $this->profile['config']['reverse'] ?? false,
+                    ]
+                ),
+                $this->denormalizer,
+                [
+                    // TODO: temporary until StaticReference
+                    'currency' => $this->profile['data']['columns']['currency'],
 
-            $reverse = (bool) ($this->profile['config']['reverse'] ?? false);
-            if (true === $reverse) {
-                $iterator = new ReverseRowIterator($iterator, $this->profile['data']['rows']['start'], $sheet->getHighestRow());
-            }
-
-            $this->iterator = $iterator;
+                    'datetime_format' => $this->profile['data']['columns']['date']['format'],
+                ]
+            );
         }
 
         return $this->iterator;
     }
 
-    /**
-     * @param Row $row
-     *
-     * @return array
-     */
-    private function readRow(Row $row): array
+    private function buildReference(array $spec): Reference
     {
-        $data = [];
-        $rowIndex = $row->getRowIndex();
-        foreach ($this->profile['data']['columns'] as $name => $spec) {
-            if (\is_array($spec)) {
-                $data[$name] = $this->fetch(\sprintf('%1$s%2$d', $this->profile['data']['columns'][$name]['column'], $rowIndex));
-            } else {
-                $data[$name] = $spec;
-            }
+        if (isset($spec['column'])) {
+            return new ColumnReference($spec['column']);
         }
 
-        return $data;
+        if (isset($spec['header'])) {
+            return new HeaderReference($spec['header']);
+        }
     }
 }

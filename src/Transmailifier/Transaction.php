@@ -43,65 +43,31 @@ class Transaction
      */
     private $note;
 
-    /**
-     * @param float              $state
-     * @param float              $amount
-     * @param string             $currency
-     * @param \DateTimeInterface $time
-     * @param string|null        $note
-     */
-    public function __construct(float $state, float $amount, string $currency, \DateTimeInterface $time, string $note = null)
-    {
-        $this->state = $state;
-        $this->amount = $amount;
-        $this->currency = $currency;
-        $this->time = $time;
-        $this->note = $note;
-    }
-
-    /**
-     * @return string
-     */
     public function getIdentifier(): string
     {
         return md5($this->time->format('Y-m-d').'_'.$this->currency.'_'.$this->amount.'_'.$this->state.'_'.$this->note);
     }
 
-    /**
-     * @return float
-     */
     public function getState(): float
     {
         return $this->state;
     }
 
-    /**
-     * @return string
-     */
     public function getCurrency(): string
     {
         return $this->currency;
     }
 
-    /**
-     * @return float
-     */
     public function getAmount(): float
     {
         return $this->amount;
     }
 
-    /**
-     * @return bool
-     */
     public function isExpense(): bool
     {
         return $this->amount < 0;
     }
 
-    /**
-     * @return float
-     */
     public function getExpense(): float
     {
         if ($this->isExpense()) {
@@ -111,17 +77,11 @@ class Transaction
         return 0;
     }
 
-    /**
-     * @return bool
-     */
     public function isIncome(): bool
     {
         return $this->amount > 0;
     }
 
-    /**
-     * @return float
-     */
     public function getIncome(): float
     {
         if ($this->isIncome()) {
@@ -131,17 +91,11 @@ class Transaction
         return 0;
     }
 
-    /**
-     * @return \DateTimeInterface
-     */
     public function getTime(): \DateTimeInterface
     {
         return $this->time;
     }
 
-    /**
-     * @return null|string
-     */
     public function getNote(): ?string
     {
         return $this->note;

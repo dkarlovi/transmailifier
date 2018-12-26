@@ -1,3 +1,4 @@
 /vendor/
 /bin/transmailifier.phar
 /config.yaml
+/var
