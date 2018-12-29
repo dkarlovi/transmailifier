@@ -13,6 +13,8 @@ declare(strict_types=1);
 
 namespace Dkarlovi\Transmailifier;
 
+use Xezilaires\Denormalizer;
+
 /**
  * Class Reader.
  */
@@ -21,31 +23,28 @@ class Reader
     /**
      * @var array
      */
-    private $config;
+    private $readerConfig;
 
     /**
-     * @param array $config
+     * @var Denormalizer
      */
-    public function __construct(array $config)
+    private $denormalizer;
+
+    public function __construct(array $readerConfig, Denormalizer $denormalizer)
     {
-        $this->config = $config;
+        $this->readerConfig = $readerConfig;
+        $this->denormalizer = $denormalizer;
     }
 
-    /**
-     * @param \SplFileObject $file
-     * @param string         $profileName
-     *
-     * @return Ledger
-     */
     public function read(\SplFileObject $file, string $profileName): Ledger
     {
-        if (false === array_key_exists($profileName, $this->config['profiles'])) {
+        if (false === array_key_exists($profileName, $this->readerConfig['profiles'])) {
             $message = sprintf('No such profile "%1$s"', $profileName);
             throw new \RuntimeException($message);
         }
 
-        $profile = $this->config['profiles'][$profileName];
-        $ledger = new XlsLedger($file->getRealPath(), $profile);
+        $profile = $this->readerConfig['profiles'][$profileName];
+        $ledger = new XlsLedger($file, $profile, $this->denormalizer);
 
         if (isset($profile['config']['validator'])) {
             $profileValue = $profile['config']['validator']['value'];
@@ -54,7 +53,7 @@ class Reader
             if ($profileValue !== $fileValue) {
                 $message = sprintf('Profile / file mismatch: profile expects "%1$s", file contains "%2$s".', $profileValue, $fileValue);
 
-                foreach ($this->config['profiles'] as $candidateProfileName => $candidateProfile) {
+                foreach ($this->readerConfig['profiles'] as $candidateProfileName => $candidateProfile) {
                     if ($candidateProfile['config']['validator']['value'] === $fileValue) {
                         $message .= sprintf("\n\n".'Did you mean to use "%1$s" profile instead?', $candidateProfileName);
                         break;

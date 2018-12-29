@@ -11,7 +11,7 @@ declare(strict_types=1);
  * with this source code in the file LICENSE.
  */
 
-namespace Dkarlovi\Transmailifier\Infrastructure\Symfony\Command;
+namespace Dkarlovi\Transmailifier\Bridge\Symfony\Command;
 
 use Dkarlovi\Transmailifier\Processor;
 use Symfony\Component\Console\Command\Command;
@@ -21,22 +21,23 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
-/**
- * Class FindInitialAmountCommand.
- */
 class FindInitialAmountCommand extends Command
 {
+    /**
+     * @var string
+     */
+    protected static $defaultName = 'find-initial-amount';
+
     /**
      * @var Processor
      */
     private $processor;
 
-    /**
-     * @param Processor $processor
-     */
     public function __construct(Processor $processor)
     {
         parent::__construct('find-initial-amount');
+
+        $this->setDescription('Find the initial amount to set the account to if starting from this import');
 
         $this->processor = $processor;
     }
@@ -56,12 +57,11 @@ class FindInitialAmountCommand extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output): void
     {
-        $style = new SymfonyStyle($input, $output);
-        $ledger = $this->processor->read(
-            new \SplFileObject($input->getArgument('path')),
-            $input->getArgument('profile')
-        );
-
+        /** @var string $path */
+        $path = $input->getArgument('path');
+        /** @var string $profile */
+        $profile = $input->getArgument('profile');
+        $ledger = $this->processor->read(new \SplFileObject($path), $profile);
         $summary = $ledger->getSummary();
 
         $formatter = new \NumberFormatter(setlocale(LC_MONETARY, '0'), \NumberFormatter::CURRENCY);
@@ -83,6 +83,7 @@ class FindInitialAmountCommand extends Command
             );
         }
 
+        $style = new SymfonyStyle($input, $output);
         $style->section('Overall');
         $style->table([], [
             $this->row('Currency', $summary->getCurrency()),
@@ -108,10 +109,7 @@ class FindInitialAmountCommand extends Command
     }
 
     /**
-     * @param string $label
-     * @param mixed  $value
-     *
-     * @return array
+     * @param int|string $value
      */
     private function row(string $label, $value): array
     {
@@ -122,7 +120,7 @@ class FindInitialAmountCommand extends Command
     }
 
     /**
-     * @param string|int|array $values
+     * @param array|int|string $values
      *
      * @return string|TableCell
      */

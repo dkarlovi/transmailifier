@@ -1,0 +1,25 @@
+parameters:
+    env(ROOT): "%env(HOME)%/.config/transmailifier"
+    env(CONFIG): "%env(ROOT)%/config.yaml"
+
+    # TODO: Symfony workaround
+    kernel.secret: transmailifier
+
+framework:
+    serializer: ~
+
+swiftmailer:
+    url: "%env(string:key:url:key:mailer:yaml:file:CONFIG)%"
+    sender_address: "%env(string:key:sender_address:key:mailer:yaml:file:CONFIG)%"
+
+services:
+    _defaults:
+        autoconfigure: true
+        autowire: true
+        public: false
+        bind:
+            $readerConfig: "%env(key:reader:yaml:file:CONFIG)%"
+            $storagePath: "%env(ROOT)%/transmailifier.sqlite"
+
+    Dkarlovi\Transmailifier\:
+        resource: '../src/Transmailifier'

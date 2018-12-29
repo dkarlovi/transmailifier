@@ -1,5 +1,9 @@
 {
+    "blacklist": [
+        "var/"  
+    ],
     "files": [
+        "config/services.yaml",
         "src/bootstrap.php"
     ],
     "chmod": "0755",

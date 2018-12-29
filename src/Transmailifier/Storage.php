@@ -21,26 +21,18 @@ class Storage
     /**
      * @var string
      */
-    private $path;
+    private $storagePath;
 
     /**
      * @var \PDO
      */
     private $connection;
 
-    /**
-     * @param string $path
-     */
-    public function __construct(string $path)
+    public function __construct(string $storagePath)
     {
-        $this->path = $path;
+        $this->storagePath = $storagePath;
     }
 
-    /**
-     * @param Ledger $ledger
-     *
-     * @return array
-     */
     public function filterProcessedTransactions(Ledger $ledger): array
     {
         $unprocessed = [];
@@ -78,11 +70,6 @@ class Storage
         $connection->commit();
     }
 
-    /**
-     * @param Transaction $transaction
-     *
-     * @return bool
-     */
     private function isTransactionProcessed(Transaction $transaction): bool
     {
         $statement = $this->getConnection()->prepare(
@@ -95,14 +82,11 @@ class Storage
         return (bool) $statement->fetchColumn();
     }
 
-    /**
-     * @return \PDO
-     */
     private function getConnection(): \PDO
     {
         if (null === $this->connection) {
-            shell_exec('mkdir -p '.\dirname($this->path));
-            $this->connection = new \PDO('sqlite://'.$this->path);
+            shell_exec('mkdir -p '.\dirname($this->storagePath));
+            $this->connection = new \PDO('sqlite://'.$this->storagePath);
 
             $this->ensureSchema($this->connection);
         }
@@ -110,9 +94,6 @@ class Storage
         return $this->connection;
     }
 
-    /**
-     * @param \PDO $connection
-     */
     private function ensureSchema(\PDO $connection): void
     {
         $schema = [

@@ -11,7 +11,7 @@ declare(strict_types=1);
  * with this source code in the file LICENSE.
  */
 
-namespace Dkarlovi\Transmailifier\Infrastructure\Symfony\Command;
+namespace Dkarlovi\Transmailifier\Bridge\Symfony\Command;
 
 use Dkarlovi\Transmailifier\Processor;
 use Symfony\Component\Console\Command\Command;
@@ -23,22 +23,23 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\StyleInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
-/**
- * Class ProcessCommand.
- */
 class ProcessCommand extends Command
 {
+    /**
+     * @var string
+     */
+    protected static $defaultName = 'process';
+
     /**
      * @var Processor
      */
     private $processor;
 
-    /**
-     * @param Processor $processor
-     */
     public function __construct(Processor $processor)
     {
         parent::__construct('process');
+
+        $this->setDescription('Process a ledger, mark transactions as processed, send a CSV to specified addresses');
 
         $this->processor = $processor;
     }
@@ -58,17 +59,18 @@ class ProcessCommand extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output): void
     {
-        $style = new SymfonyStyle($input, $output);
-        $ledger = $this->processor->read(
-            new \SplFileObject($input->getArgument('path')),
-            $input->getArgument('profile')
-        );
+        /** @var string $path */
+        $path = $input->getArgument('path');
+        /** @var string $profile */
+        $profile = $input->getArgument('profile');
+        $ledger = $this->processor->read(new \SplFileObject($path), $profile);
 
         // TODO: header with profile name, where to send, etc
 
         $unprocessedTransactions = $this->processor->filterProcessedTransactions($ledger);
         $unprocessedTransactionsCount = \count($unprocessedTransactions);
 
+        $style = new SymfonyStyle($input, $output);
         if (0 === $unprocessedTransactionsCount) {
             $style->success('All the transactions have already been processed.');
 
@@ -84,18 +86,13 @@ class ProcessCommand extends Command
 
         if (true === $style->confirm(\sprintf('Process these %1$d transactions?', $unprocessedTransactionsCount))) {
             $this->processor->processUnprocessedTransactions($ledger);
-        }
 
-        $style->success(\sprintf('Successfully processed %1$d new transactions.', $unprocessedTransactionsCount));
+            $style->success(\sprintf('Successfully processed %1$d new transactions.', $unprocessedTransactionsCount));
+        } else {
+            $style->warning('Processing aborted.');
+        }
     }
 
-    /**
-     * @param OutputInterface $output
-     * @param StyleInterface  $style
-     * @param callable        $formatter
-     * @param array           $unprocessedTransactions
-     * @param int             $unprocessedDisplayLimit
-     */
     private function previewUnprocessedTransactions(OutputInterface $output, StyleInterface $style, callable $formatter, array $unprocessedTransactions, int $unprocessedDisplayLimit = 10): void
     {
         $unprocessedTransactionsCount = \count($unprocessedTransactions);

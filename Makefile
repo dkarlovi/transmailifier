@@ -4,6 +4,9 @@ QA_DOCKER_COMMAND=docker run -it --rm -v /tmp/tmp-phpqa:/tmp -v "$(shell pwd):/p
 dist: cs phpstan
 use: box use
 
+clean:
+	rm -rf var/ bin/transmailifier.phar
+
 cs:
 	sh -c "${QA_DOCKER_COMMAND} php-cs-fixer fix --diff -vvv"
 

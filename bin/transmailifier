@@ -17,7 +17,11 @@ if (!ini_get('date.timezone')) {
 
 require __DIR__.'/../src/bootstrap.php';
 
-use Dkarlovi\Transmailifier\Infrastructure\Symfony\Console\Application;
+use Dkarlovi\Transmailifier\Bridge\Symfony\AppKernel;
+use Dkarlovi\Transmailifier\Bridge\Symfony\Console\Application;
 
-$application = new Application();
+$kernel = new AppKernel('prod', false);
+$kernel->boot();
+
+$application = new Application($kernel);
 $application->run();
