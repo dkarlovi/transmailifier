@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace Dkarlovi\Transmailifier\Bridge\Symfony\Command;
 
 use Dkarlovi\Transmailifier\Processor;
+use Dkarlovi\Transmailifier\Transaction;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Helper\TableStyle;
@@ -82,14 +83,39 @@ class ProcessCommand extends Command
             return $formatter->formatCurrency($amount, $ledger->getCurrency());
         };
 
-        $this->previewUnprocessedTransactions($output, $style, $currencyFormatter, $unprocessedTransactions, 5);
+        $uncategorizedTransactions = [];
+        foreach ($unprocessedTransactions as $unprocessedTransaction) {
+            if (false === $unprocessedTransaction->hasCategory()) {
+                $uncategorizedTransactions[] = $unprocessedTransaction;
+            }
+        }
 
-        if (true === $style->confirm(\sprintf('Process these %1$d transactions?', $unprocessedTransactionsCount))) {
-            $this->processor->processUnprocessedTransactions($ledger);
+        $this->previewUncategorizedTransactions($output, $style, $currencyFormatter, $uncategorizedTransactions);
+        $uncategorizedTransactionsCount = \count($uncategorizedTransactions);
 
-            $style->success(\sprintf('Successfully processed %1$d new transactions.', $unprocessedTransactionsCount));
+        if (0 === $uncategorizedTransactionsCount || true === $style->confirm(\sprintf('Proceed with %1$d uncategorized transactions?', $uncategorizedTransactionsCount))) {
+            $this->previewUnprocessedTransactions($output, $style, $currencyFormatter, $unprocessedTransactions);
+
+            if (true === $style->confirm(\sprintf('Process these %1$d transactions?', $unprocessedTransactionsCount))) {
+                $this->processor->processUnprocessedTransactions($ledger);
+
+                $style->success(\sprintf('Successfully processed %1$d new transactions.', $unprocessedTransactionsCount));
+            } else {
+                $style->warning('Processing aborted.');
+            }
         } else {
             $style->warning('Processing aborted.');
+        }
+    }
+
+    private function previewUncategorizedTransactions(OutputInterface $output, StyleInterface $style, callable $formatter, array $uncategorizedTransactions): void
+    {
+        $uncategorizedTransactionsCount = \count($uncategorizedTransactions);
+
+        if ($uncategorizedTransactionsCount > 0) {
+            $style->note(\sprintf('Found %1$d uncategorized transactions', $uncategorizedTransactionsCount));
+
+            $this->renderTransactions($output, $formatter, $uncategorizedTransactions);
         }
     }
 
@@ -105,26 +131,35 @@ class ProcessCommand extends Command
             $style->note(\sprintf('(displaying latest %1$d transactions)', $unprocessedDisplayLimit));
         }
 
+        $this->renderTransactions($output, $formatter, $transactionsToDisplay);
+    }
+
+    /**
+     * @param Transaction[] $transactions
+     */
+    private function renderTransactions(OutputInterface $output, callable $formatter, array $transactions): void
+    {
         $rightAligned = new TableStyle();
         $rightAligned->setPadType(STR_PAD_LEFT);
 
         $table = new Table($output);
         $table->setStyle('box');
-        $table->setHeaders(['Date', 'Amount', 'New state', 'Note']);
+        $table->setHeaders(['Date', 'Amount', 'New state', 'Category', 'Payee', 'Note']);
         $table->setColumnWidths([10, 15, 15, 20]);
         $table->setColumnStyle(1, $rightAligned);
         $table->setColumnStyle(2, $rightAligned);
 
-        /*
-         * @var Transaction
-         */
-        foreach ($transactionsToDisplay as $transaction) {
-            $table->addRow([
-                $transaction->getTime()->format('Y-m-d'),
-                $formatter($transaction->getAmount()),
-                $formatter($transaction->getState()),
-                $transaction->getNote(),
-            ]);
+        foreach ($transactions as $transaction) {
+            $table->addRow(
+                [
+                    $transaction->getTime()->format('Y-m-d'),
+                    $formatter($transaction->getAmount()),
+                    $formatter($transaction->getState()),
+                    $transaction->getCategory(),
+                    $transaction->getPayee(),
+                    $transaction->getNote(),
+                ]
+            );
         }
         $table->render();
     }

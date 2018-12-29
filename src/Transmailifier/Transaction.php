@@ -41,7 +41,22 @@ class Transaction
     /**
      * @var null|string
      */
+    private $category;
+
+    /**
+     * @var null|string
+     */
+    private $payee;
+
+    /**
+     * @var null|string
+     */
     private $note;
+
+    /**
+     * @var bool
+     */
+    private $uncategorized = false;
 
     public function getIdentifier(): string
     {
@@ -94,6 +109,21 @@ class Transaction
     public function getTime(): \DateTimeInterface
     {
         return $this->time;
+    }
+
+    public function hasCategory(): bool
+    {
+        return null !== $this->category && false === $this->uncategorized;
+    }
+
+    public function getCategory(): ?string
+    {
+        return $this->category;
+    }
+
+    public function getPayee(): ?string
+    {
+        return $this->payee;
     }
 
     public function getNote(): ?string

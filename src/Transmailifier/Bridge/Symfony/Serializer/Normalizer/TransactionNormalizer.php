@@ -62,6 +62,14 @@ class TransactionNormalizer extends PropertyNormalizer
         }
         $data['time'] = $time;
 
+        $matchers = $context['matchers'] ?? [];
+        foreach ($matchers as $matcher) {
+            if (0 !== preg_match($matcher['match'], $data['note'])) {
+                $data = array_replace($data, $matcher['values']);
+                break;
+            }
+        }
+
         // TODO: temporary until StaticReference
         $data['currency'] = $context['currency'];
 
