@@ -54,6 +54,9 @@ class Processor
         $this->storage->markTransactionsProcessed($transactions);
     }
 
+    /**
+     * @return Transaction[]
+     */
     public function filterProcessedTransactions(Ledger $ledger): array
     {
         return $this->storage->filterProcessedTransactions($ledger);

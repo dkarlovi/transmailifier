@@ -33,6 +33,9 @@ class Storage
         $this->storagePath = $storagePath;
     }
 
+    /**
+     * @return Transaction[]
+     */
     public function filterProcessedTransactions(Ledger $ledger): array
     {
         $unprocessed = [];

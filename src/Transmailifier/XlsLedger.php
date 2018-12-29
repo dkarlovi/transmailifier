@@ -180,6 +180,7 @@ class XlsLedger implements Ledger
                     'currency' => $this->profile['data']['columns']['currency'],
 
                     'datetime_format' => $this->profile['data']['columns']['date']['format'],
+                    'matchers' => $this->profile['config']['matchers'],
                 ]
             );
         }
