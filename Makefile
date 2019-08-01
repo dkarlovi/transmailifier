@@ -13,7 +13,8 @@ cs:
 phpstan:
 	sh -c "${QA_DOCKER_COMMAND} phpstan analyse"
 
-box:
+box: clean
+	bin/transmailifier > /dev/null
 	box compile
 
 use:

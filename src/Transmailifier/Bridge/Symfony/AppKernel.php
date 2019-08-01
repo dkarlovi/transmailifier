@@ -49,6 +49,14 @@ final class AppKernel extends Kernel
     /**
      * {@inheritdoc}
      */
+    public function getCacheDir(): string
+    {
+        return __DIR__.'/../../../../var/cache/prod';
+    }
+
+    /**
+     * {@inheritdoc}
+     */
     protected function build(ContainerBuilder $builder): void
     {
         $builder->addCompilerPass(new RegisterCommandsCompilerPass());

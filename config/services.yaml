@@ -6,7 +6,10 @@ parameters:
     kernel.secret: transmailifier
 
 framework:
-    serializer: ~
+    serializer:
+        mapping:
+            paths:
+                - "%kernel.project_dir%/config/serializer.yaml"
 
 swiftmailer:
     url: "%env(string:key:url:key:mailer:yaml:file:CONFIG)%"

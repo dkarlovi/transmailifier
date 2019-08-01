@@ -38,7 +38,7 @@ class Reader
 
     public function read(\SplFileObject $file, string $profileName): Ledger
     {
-        if (false === array_key_exists($profileName, $this->readerConfig['profiles'])) {
+        if (false === \array_key_exists($profileName, $this->readerConfig['profiles'])) {
             $message = sprintf('No such profile "%1$s"', $profileName);
             throw new \RuntimeException($message);
         }

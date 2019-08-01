@@ -1,11 +1,14 @@
 {
-    "blacklist": [
-        "var/"  
+    "directories": [
+        "bin",
+        "config",
+        "src",
+        "var/",
+        "vendor/"
     ],
     "files": [
         "config/services.yaml",
         "src/bootstrap.php"
     ],
-    "chmod": "0755",
     "compression": "GZ"
 }
