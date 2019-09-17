@@ -69,7 +69,7 @@ class ProcessCommand extends Command
         $profile = $input->getArgument('profile');
         /** @var string $profile */
         $skip = $input->getOption('skip');
-        
+
         $ledger = $this->processor->read(new \SplFileObject($path), $profile);
 
         $style = new SymfonyStyle($input, $output);
@@ -88,7 +88,7 @@ class ProcessCommand extends Command
             if ($markProcessed) {
                 $this->previewMarkProcessedTransactions($output, $style, $currencyFormatter, $markProcessed);
 
-                if (true === $style->confirm(\sprintf('Mark these %1$d transactions as processed?', count($markProcessed)))) {
+                if (true === $style->confirm(\sprintf('Mark these %1$d transactions as processed?', \count($markProcessed)))) {
                     $this->processor->markTransactionsProcessed($markProcessed);
                 }
             }

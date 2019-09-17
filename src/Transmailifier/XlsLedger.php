@@ -162,7 +162,7 @@ class XlsLedger implements Ledger
             ];
 
             foreach (['state', 'amount', 'expense', 'income', 'currency', 'note'] as $column) {
-                if (!($reference = $this->profile['data']['columns'][$column] ?? false)) {
+                if ( ! ($reference = $this->profile['data']['columns'][$column] ?? false)) {
                     continue;
                 }
                 $mapping[$column] = $this->buildReference($reference);

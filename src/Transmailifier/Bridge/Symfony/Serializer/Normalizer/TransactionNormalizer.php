@@ -32,7 +32,7 @@ class TransactionNormalizer extends PropertyNormalizer
     {
         $data = array_map('trim', $data);
 
-        if (!($data['amount'] ?? false)) {
+        if ( ! ($data['amount'] ?? false)) {
             if (false === ($data['income'] xor $data['expense'])) {
                 throw new \RuntimeException('Either expense or income must be set, but not both');
             }
