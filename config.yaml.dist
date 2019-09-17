@@ -16,10 +16,11 @@ reader:
           cell: D1
           value: My account A
       data:
+        header: 5
         rows:
           start: 6
         columns:
-          date:
+          time:
             column: A
             format: d.m.Y.
           income:
@@ -44,7 +45,7 @@ reader:
         rows:
           start: 8
         columns:
-          date:
+          time:
             column: A
             format: d.m.Y.
           income:
@@ -69,7 +70,7 @@ reader:
         rows:
           start: 10
         columns:
-          date:
+          time:
             column: A
             format: d.m.Y.
           income:

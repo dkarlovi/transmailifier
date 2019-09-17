@@ -111,6 +111,11 @@ class Transaction
         return $this->time;
     }
 
+    public function isBefore(\DateTimeInterface $dateTime): bool
+    {
+        return $this->time < $dateTime;
+    }
+
     public function hasCategory(): bool
     {
         return null !== $this->category && false === $this->uncategorized;

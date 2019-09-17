@@ -15,7 +15,7 @@
         "ext-intl": "*",
         "ext-pdo": "*",
         "ext-pdo_sqlite": ">=3.0",
-        "dkarlovi/xezilaires": "dev-master",
+        "dkarlovi/xezilaires": "^0.1",
         "phpoffice/phpspreadsheet": "^1.5",
         "symfony/console": "^4.2",
         "symfony/framework-bundle": "^4.2",

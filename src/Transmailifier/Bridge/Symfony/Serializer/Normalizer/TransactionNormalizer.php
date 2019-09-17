@@ -30,33 +30,44 @@ class TransactionNormalizer extends PropertyNormalizer
      */
     public function denormalize($data, $class, $format = null, array $context = [])
     {
-        if (false === ($data['income'] xor $data['expense'])) {
-            throw new \RuntimeException('Either expense or income must be set, but not both');
+        $data = array_map('trim', $data);
+
+        if (!($data['amount'] ?? false)) {
+            if (false === ($data['income'] xor $data['expense'])) {
+                throw new \RuntimeException('Either expense or income must be set, but not both');
+            }
+
+            switch (true) {
+                case $data['expense']:
+                    if ($data['expense'] < 0) {
+                        // this is actually income, but written as -10.00HRK expense
+                        $amount = abs($data['expense']);
+                    } else {
+                        $amount = -$data['expense'];
+                    }
+                    break;
+                case $data['income']:
+                    if ($data['income'] < 0) {
+                        // this is actually expense, but written as -10.00HRK income
+                        $amount = -abs($data['income']);
+                    } else {
+                        $amount = $data['income'];
+                    }
+                    break;
+                default:
+                    throw new \RuntimeException('No income or expense set!');
+            }
+            $data['amount'] = $amount;
+        } else {
+            $data['amount'] = (float) $data['amount'];
         }
 
-        switch (true) {
-            case $data['expense']:
-                if ($data['expense'] < 0) {
-                    // this is actually income, but written as -10.00HRK expense
-                    $amount = abs($data['expense']);
-                } else {
-                    $amount = -$data['expense'];
-                }
-                break;
-            case $data['income']:
-                if ($data['income'] < 0) {
-                    // this is actually expense, but written as -10.00HRK income
-                    $amount = -abs($data['income']);
-                } else {
-                    $amount = $data['income'];
-                }
-                break;
-            default:
-                throw new \RuntimeException('No income or expense set!');
+        if ($context['datetime_format'] ?? false) {
+            $time = \DateTime::createFromFormat($context['datetime_format'], $data['time']);
+        } else {
+            $time = \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($data['time']);
         }
-        $data['amount'] = $amount;
 
-        $time = \DateTime::createFromFormat($context['datetime_format'], $data['time']);
         if (false === $time) {
             throw new \RuntimeException(sprintf('Invalid date %1$s given', $data['time']));
         }
@@ -69,9 +80,6 @@ class TransactionNormalizer extends PropertyNormalizer
                 break;
             }
         }
-
-        // TODO: temporary until StaticReference
-        $data['currency'] = $context['currency'];
 
         return parent::denormalize($data, $class, $format, $context);
     }
