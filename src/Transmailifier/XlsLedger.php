@@ -53,9 +53,9 @@ class XlsLedger implements Ledger
      */
     private $summary;
 
-    public function __construct(\SplFileObject $path, array $profile, Denormalizer $denormalizer)
+    public function __construct(\SplFileObject $file, array $profile, Denormalizer $denormalizer)
     {
-        $this->spreadsheet = new Spreadsheet($path);
+        $this->spreadsheet = new Spreadsheet($file);
         $this->profile = $profile;
         $this->denormalizer = $denormalizer;
     }
@@ -65,7 +65,7 @@ class XlsLedger implements Ledger
      */
     public function getCurrency(): string
     {
-        return $this->profile['data']['columns']['currency'];
+        return $this->profile['config']['currency'];
     }
 
     /**
@@ -157,30 +157,32 @@ class XlsLedger implements Ledger
     private function getIterator(): \Iterator
     {
         if (null === $this->iterator) {
+            $mapping = [
+                'time' => $this->buildReference($this->profile['data']['columns']['time']),
+            ];
+
+            foreach (['state', 'amount', 'expense', 'income', 'currency', 'note'] as $column) {
+                if (!($reference = $this->profile['data']['columns'][$column] ?? false)) {
+                    continue;
+                }
+                $mapping[$column] = $this->buildReference($reference);
+            }
+
             $this->iterator = new SpreadsheetIterator(
                 $this->spreadsheet,
                 new Mapping(
                     Transaction::class,
-                    [
-                        'time' => $this->buildReference($this->profile['data']['columns']['date']),
-                        'state' => $this->buildReference($this->profile['data']['columns']['state']),
-                        'expense' => $this->buildReference($this->profile['data']['columns']['expense']),
-                        'income' => $this->buildReference($this->profile['data']['columns']['income']),
-                        // 'currency' => $this->buildReference($this->profile['data']['columns']['currency']),
-                        'note' => $this->buildReference($this->profile['data']['columns']['note']),
-                    ],
+                    $mapping,
                     [
                         'start' => $this->profile['data']['rows']['start'] ?? 1,
+                        'header' => $this->profile['data']['header'] ?? null,
                         'reverse' => $this->profile['config']['reverse'] ?? false,
                     ]
                 ),
                 $this->denormalizer,
                 [
-                    // TODO: temporary until StaticReference
-                    'currency' => $this->profile['data']['columns']['currency'],
-
-                    'datetime_format' => $this->profile['data']['columns']['date']['format'],
-                    'matchers' => $this->profile['config']['matchers'],
+                    'datetime_format' => $this->profile['data']['columns']['time']['format'] ?? null,
+                    'matchers' => $this->profile['config']['matchers'] ?? [],
                 ]
             );
         }

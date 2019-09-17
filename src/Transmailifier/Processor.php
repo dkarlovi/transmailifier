@@ -45,6 +45,31 @@ class Processor
         return $this->reader->read($file, $profile);
     }
 
+    /**
+     * @return Transaction[]
+     */
+    public function findUnprocessedTransactionsBeforeTime(Ledger $ledger, \DateTimeInterface $beforeDatetime): array
+    {
+        $transactions = [];
+
+        /** @var Transaction $transaction */
+        foreach ($ledger as $transaction) {
+            if ($transaction->isBefore($beforeDatetime)) {
+                $transactions[] = $transaction;
+            }
+        }
+
+        return $this->storage->filterProcessedTransactions($transactions);
+    }
+
+    /**
+     * @param Transaction[] $transactions
+     */
+    public function markTransactionsProcessed(array $transactions): void
+    {
+        $this->storage->markTransactionsProcessed($transactions);
+    }
+
     public function processUnprocessedTransactions(Ledger $ledger): void
     {
         $transactions = $this->filterProcessedTransactions($ledger);

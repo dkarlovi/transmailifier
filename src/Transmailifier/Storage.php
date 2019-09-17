@@ -36,7 +36,7 @@ class Storage
     /**
      * @return Transaction[]
      */
-    public function filterProcessedTransactions(Ledger $ledger): array
+    public function filterProcessedTransactions(iterable $ledger): array
     {
         $unprocessed = [];
 

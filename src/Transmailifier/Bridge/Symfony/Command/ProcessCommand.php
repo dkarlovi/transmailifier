@@ -16,10 +16,12 @@ namespace Dkarlovi\Transmailifier\Bridge\Symfony\Command;
 use Dkarlovi\Transmailifier\Processor;
 use Dkarlovi\Transmailifier\Transaction;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Exception\InvalidArgumentException;
 use Symfony\Component\Console\Helper\Table;
 use Symfony\Component\Console\Helper\TableStyle;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\StyleInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
@@ -52,7 +54,8 @@ class ProcessCommand extends Command
     {
         $this
             ->addArgument('profile', InputArgument::REQUIRED, 'Processing profile to use')
-            ->addArgument('path', InputArgument::REQUIRED, 'File to processUnprocessedTransactions');
+            ->addArgument('path', InputArgument::REQUIRED, 'File to processUnprocessedTransactions')
+            ->addOption('skip', null, InputOption::VALUE_OPTIONAL, 'Mark all transactions before this date as skipped');
     }
 
     /**
@@ -64,24 +67,43 @@ class ProcessCommand extends Command
         $path = $input->getArgument('path');
         /** @var string $profile */
         $profile = $input->getArgument('profile');
+        /** @var string $profile */
+        $skip = $input->getOption('skip');
+        
         $ledger = $this->processor->read(new \SplFileObject($path), $profile);
+
+        $style = new SymfonyStyle($input, $output);
+        $formatter = new \NumberFormatter('hr', \NumberFormatter::CURRENCY);
+        $currencyFormatter = function (float $amount) use ($formatter, $ledger) {
+            return $formatter->formatCurrency($amount, $ledger->getCurrency());
+        };
+
+        if (null !== $skip) {
+            $date = new \DateTime($skip);
+            if (false === $date) {
+                throw new InvalidArgumentException('Invalid "skip" date');
+            }
+
+            $markProcessed = $this->processor->findUnprocessedTransactionsBeforeTime($ledger, $date);
+            if ($markProcessed) {
+                $this->previewMarkProcessedTransactions($output, $style, $currencyFormatter, $markProcessed);
+
+                if (true === $style->confirm(\sprintf('Mark these %1$d transactions as processed?', count($markProcessed)))) {
+                    $this->processor->markTransactionsProcessed($markProcessed);
+                }
+            }
+        }
 
         // TODO: header with profile name, where to send, etc
 
         $unprocessedTransactions = $this->processor->filterProcessedTransactions($ledger);
         $unprocessedTransactionsCount = \count($unprocessedTransactions);
 
-        $style = new SymfonyStyle($input, $output);
         if (0 === $unprocessedTransactionsCount) {
             $style->success('All the transactions have already been processed.');
 
             return;
         }
-
-        $formatter = new \NumberFormatter('hr', \NumberFormatter::CURRENCY);
-        $currencyFormatter = function (float $amount) use ($formatter, $ledger) {
-            return $formatter->formatCurrency($amount, $ledger->getCurrency());
-        };
 
         $uncategorizedTransactions = [];
         foreach ($unprocessedTransactions as $unprocessedTransaction) {
@@ -119,6 +141,21 @@ class ProcessCommand extends Command
         }
     }
 
+    private function previewMarkProcessedTransactions(OutputInterface $output, StyleInterface $style, callable $formatter, array $markProcessed, int $markProcessedDisplayLimit = 10): void
+    {
+        $markProcessedCount = \count($markProcessed);
+        $style->note(\sprintf('Found %1$d new transactions to mark as processed', $markProcessedCount));
+
+        $transactionsToDisplay = $markProcessed;
+        if ($markProcessedCount > $markProcessedDisplayLimit) {
+            $transactionsToDisplay = \array_slice($markProcessed, -$markProcessedDisplayLimit);
+
+            $style->note(\sprintf('(displaying latest %1$d transactions)', $markProcessedDisplayLimit));
+        }
+
+        $this->renderTransactions($output, $formatter, $transactionsToDisplay);
+    }
+
     private function previewUnprocessedTransactions(OutputInterface $output, StyleInterface $style, callable $formatter, array $unprocessedTransactions, int $unprocessedDisplayLimit = 10): void
     {
         $unprocessedTransactionsCount = \count($unprocessedTransactions);
@@ -144,7 +181,7 @@ class ProcessCommand extends Command
 
         $table = new Table($output);
         $table->setStyle('box');
-        $table->setHeaders(['Date', 'Amount', 'New state', 'Category', 'Payee', 'Note']);
+        $table->setHeaders(['Date', 'Amount', 'Category', 'Payee', 'Note']);
         $table->setColumnWidths([10, 15, 15, 20]);
         $table->setColumnStyle(1, $rightAligned);
         $table->setColumnStyle(2, $rightAligned);
@@ -154,7 +191,7 @@ class ProcessCommand extends Command
                 [
                     $transaction->getTime()->format('Y-m-d'),
                     $formatter($transaction->getAmount()),
-                    $formatter($transaction->getState()),
+                    // $formatter($transaction->getState()),
                     $transaction->getCategory(),
                     $transaction->getPayee(),
                     $transaction->getNote(),
