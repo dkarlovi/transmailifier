@@ -60,7 +60,13 @@ class Transaction
 
     public function getIdentifier(): string
     {
-        return md5($this->time->format('Y-m-d').'_'.$this->currency.'_'.$this->amount.'_'.$this->state.'_'.$this->note);
+        return md5(
+            $this->time->format('Y-m-d')
+            .'_'.strtoupper($this->currency)
+            .'_'.sprintf('%0.2f', $this->amount)
+            .'_'.$this->state
+            .'_'.strtoupper($this->note)
+        );
     }
 
     public function getState(): float
