@@ -151,9 +151,10 @@ class ProcessCommand extends Command
 
         $transactionsToDisplay = $markProcessed;
         if ($markProcessedCount > $markProcessedDisplayLimit) {
-            $transactionsToDisplay = \array_slice($markProcessed, -$markProcessedDisplayLimit);
+            $localLimit = (int) floor($markProcessedDisplayLimit / 2);
+            $transactionsToDisplay = \array_merge(\array_slice($markProcessed, 0, $localLimit), [null], \array_slice($markProcessed, -$localLimit));
 
-            $style->note(\sprintf('(displaying latest %1$d transactions)', $markProcessedDisplayLimit));
+            $style->note(\sprintf('(displaying selected %1$d transactions)', $markProcessedDisplayLimit));
         }
 
         $this->renderTransactions($output, $formatter, $transactionsToDisplay);
@@ -166,9 +167,11 @@ class ProcessCommand extends Command
 
         $transactionsToDisplay = $unprocessedTransactions;
         if ($unprocessedTransactionsCount > $unprocessedDisplayLimit) {
-            $transactionsToDisplay = \array_slice($unprocessedTransactions, -$unprocessedDisplayLimit);
+            $localLimit = (int) floor($unprocessedDisplayLimit / 2);
 
-            $style->note(\sprintf('(displaying latest %1$d transactions)', $unprocessedDisplayLimit));
+            $transactionsToDisplay = \array_merge(\array_slice($unprocessedTransactions, 0, $localLimit), [null], \array_slice($unprocessedTransactions, -$localLimit));
+
+            $style->note(\sprintf('(displaying selected %1$d transactions)', $unprocessedDisplayLimit));
         }
 
         $this->renderTransactions($output, $formatter, $transactionsToDisplay);
@@ -179,17 +182,26 @@ class ProcessCommand extends Command
      */
     private function renderTransactions(OutputInterface $output, callable $formatter, array $transactions): void
     {
+        $headers = ['Date', 'Amount', 'Category', 'Payee', 'Note'];
+        $separator = array_fill(0, count($headers), '...');
+
         $rightAligned = new TableStyle();
         $rightAligned->setPadType(STR_PAD_LEFT);
 
         $table = new Table($output);
         $table->setStyle('box');
-        $table->setHeaders(['Date', 'Amount', 'Category', 'Payee', 'Note']);
+        $table->setHeaders($headers);
         $table->setColumnWidths([10, 15, 15, 20]);
         $table->setColumnStyle(1, $rightAligned);
         $table->setColumnStyle(2, $rightAligned);
 
         foreach ($transactions as $transaction) {
+            if ($transaction === null) {
+                $table->addRow($separator);
+                
+                continue;
+            }
+
             $table->addRow(
                 [
                     $transaction->getTime()->format('Y-m-d'),
@@ -197,10 +209,19 @@ class ProcessCommand extends Command
                     // $formatter($transaction->getState()),
                     $transaction->getCategory(),
                     $transaction->getPayee(),
-                    $transaction->getNote(),
+                    $this->truncate($transaction->getNote(), 40),
                 ]
             );
         }
         $table->render();
+    }
+
+    private function truncate(string $string, int $length): string
+    {
+        if (strlen($string) > $length) {
+            $string = substr($string, 0, $length) . '...';
+        }
+
+        return $string;
     }
 }
