@@ -89,7 +89,7 @@ class ProcessCommand extends Command
 
             $markProcessed = $this->processor->findUnprocessedTransactionsBeforeTime($ledger, $date);
             if ($markProcessed) {
-                $this->previewMarkProcessedTransactions($output, $style, $currencyFormatter, $markProcessed, $all ? count($markProcessed) : 10);
+                $this->previewMarkProcessedTransactions($output, $style, $currencyFormatter, $markProcessed, $all ? \count($markProcessed) : 10);
 
                 if (true === $style->confirm(\sprintf('Mark these %1$d transactions as processed?', \count($markProcessed)))) {
                     $this->processor->markTransactionsProcessed($markProcessed);
@@ -183,7 +183,7 @@ class ProcessCommand extends Command
     private function renderTransactions(OutputInterface $output, callable $formatter, array $transactions): void
     {
         $headers = ['Date', 'Amount', 'Category', 'Payee', 'Note'];
-        $separator = array_fill(0, count($headers), '...');
+        $separator = array_fill(0, \count($headers), '...');
 
         $rightAligned = new TableStyle();
         $rightAligned->setPadType(STR_PAD_LEFT);
@@ -198,7 +198,7 @@ class ProcessCommand extends Command
         foreach ($transactions as $transaction) {
             if ($transaction === null) {
                 $table->addRow($separator);
-                
+
                 continue;
             }
 
@@ -218,8 +218,8 @@ class ProcessCommand extends Command
 
     private function truncate(string $string, int $length): string
     {
-        if (strlen($string) > $length) {
-            $string = substr($string, 0, $length) . '...';
+        if (\mb_strlen($string) > $length) {
+            $string = mb_substr($string, 0, $length).'...';
         }
 
         return $string;

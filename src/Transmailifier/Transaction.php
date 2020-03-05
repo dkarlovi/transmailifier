@@ -62,10 +62,10 @@ class Transaction
     {
         return md5(
             $this->time->format('Y-m-d')
-            .'_'.strtoupper($this->currency)
+            .'_'.mb_strtoupper($this->currency)
             .'_'.sprintf('%0.2f', $this->amount)
             .'_'.$this->state
-            .'_'.strtoupper($this->note)
+            .'_'.mb_strtoupper($this->note)
         );
     }
 
