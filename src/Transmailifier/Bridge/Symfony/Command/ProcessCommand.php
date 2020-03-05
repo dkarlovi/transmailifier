@@ -55,6 +55,7 @@ class ProcessCommand extends Command
         $this
             ->addArgument('profile', InputArgument::REQUIRED, 'Processing profile to use')
             ->addArgument('path', InputArgument::REQUIRED, 'File to processUnprocessedTransactions')
+            ->addOption('all', 'a', InputOption::VALUE_NONE, 'Preview all transactions instead just a selected few')
             ->addOption('skip', null, InputOption::VALUE_OPTIONAL, 'Mark all transactions before this date as skipped');
     }
 
@@ -67,6 +68,8 @@ class ProcessCommand extends Command
         $path = $input->getArgument('path');
         /** @var string $profile */
         $profile = $input->getArgument('profile');
+        /** @var bool $all */
+        $all = $input->getOption('all');
         /** @var string $profile */
         $skip = $input->getOption('skip');
 
@@ -86,7 +89,7 @@ class ProcessCommand extends Command
 
             $markProcessed = $this->processor->findUnprocessedTransactionsBeforeTime($ledger, $date);
             if ($markProcessed) {
-                $this->previewMarkProcessedTransactions($output, $style, $currencyFormatter, $markProcessed);
+                $this->previewMarkProcessedTransactions($output, $style, $currencyFormatter, $markProcessed, $all ? count($markProcessed) : 10);
 
                 if (true === $style->confirm(\sprintf('Mark these %1$d transactions as processed?', \count($markProcessed)))) {
                     $this->processor->markTransactionsProcessed($markProcessed);
@@ -116,7 +119,7 @@ class ProcessCommand extends Command
         $uncategorizedTransactionsCount = \count($uncategorizedTransactions);
 
         if (0 === $uncategorizedTransactionsCount || true === $style->confirm(\sprintf('Proceed with %1$d uncategorized transactions?', $uncategorizedTransactionsCount))) {
-            $this->previewUnprocessedTransactions($output, $style, $currencyFormatter, $unprocessedTransactions);
+            $this->previewUnprocessedTransactions($output, $style, $currencyFormatter, $unprocessedTransactions, ($all ? \count($unprocessedTransactions) : 10));
 
             if (true === $style->confirm(\sprintf('Process these %1$d transactions?', $unprocessedTransactionsCount))) {
                 $this->processor->processUnprocessedTransactions($ledger);
