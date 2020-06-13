@@ -13,6 +13,8 @@ declare(strict_types=1);
 
 namespace Dkarlovi\Transmailifier;
 
+use Symfony\Component\Mailer\MailerInterface;
+use Symfony\Component\Mime\Email;
 use Symfony\Component\Serializer\SerializerInterface;
 
 /**
@@ -21,7 +23,7 @@ use Symfony\Component\Serializer\SerializerInterface;
 class Mailer
 {
     /**
-     * @var \Swift_Mailer
+     * @var MailerInterface
      */
     private $mailer;
 
@@ -30,7 +32,7 @@ class Mailer
      */
     private $serializer;
 
-    public function __construct(\Swift_Mailer $mailer, SerializerInterface $serializer)
+    public function __construct(MailerInterface $mailer, SerializerInterface $serializer)
     {
         $this->mailer = $mailer;
         $this->serializer = $serializer;
@@ -47,17 +49,16 @@ class Mailer
         $content = $this->serializer->serialize($transactions, 'csv');
         file_put_contents($file, $content);
 
-        /** @var \Swift_Message $message */
-        $message = $this->mailer->createMessage();
-        $message->setSubject($description);
+        $message = new Email();
+        $message->subject($description);
         foreach ($addresses as $notificationAddress) {
             $message->addTo($notificationAddress);
         }
-        $message->attach(\Swift_Attachment::fromPath($file, 'text/csv'));
+        $message->attachFromPath($file, basename($file), 'text/csv');
         try {
             $this->mailer->send($message);
         } finally {
-            // unlink($file);
+            unlink($file);
         }
     }
 }

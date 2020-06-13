@@ -62,7 +62,7 @@ class ProcessCommand extends Command
     /**
      * {@inheritdoc}
      */
-    protected function execute(InputInterface $input, OutputInterface $output): void
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         /** @var string $path */
         $path = $input->getArgument('path');
@@ -105,7 +105,7 @@ class ProcessCommand extends Command
         if (0 === $unprocessedTransactionsCount) {
             $style->success('All the transactions have already been processed.');
 
-            return;
+            return 0;
         }
 
         $uncategorizedTransactions = [];
@@ -127,10 +127,16 @@ class ProcessCommand extends Command
                 $style->success(\sprintf('Successfully processed %1$d new transactions.', $unprocessedTransactionsCount));
             } else {
                 $style->warning('Processing aborted.');
+
+                return 1;
             }
         } else {
             $style->warning('Processing aborted.');
+
+            return 1;
         }
+
+        return 0;
     }
 
     private function previewUncategorizedTransactions(OutputInterface $output, StyleInterface $style, callable $formatter, array $uncategorizedTransactions): void

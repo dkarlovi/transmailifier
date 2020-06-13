@@ -15,7 +15,6 @@ namespace Dkarlovi\Transmailifier\Bridge\Symfony;
 
 use Dkarlovi\Transmailifier\Bridge\Symfony\DependencyInjection\RegisterCommandsCompilerPass;
 use Symfony\Bundle\FrameworkBundle\FrameworkBundle;
-use Symfony\Bundle\SwiftmailerBundle\SwiftmailerBundle;
 use Symfony\Component\Config\Loader\LoaderInterface;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\HttpKernel\Kernel;
@@ -33,7 +32,6 @@ final class AppKernel extends Kernel
     {
         return [
             new FrameworkBundle(),
-            new SwiftmailerBundle(),
             new XezilairesBundle(),
         ];
     }
