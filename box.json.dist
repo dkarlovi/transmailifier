@@ -7,8 +7,7 @@
         "vendor/"
     ],
     "files": [
-        "config/services.yaml",
-        "src/bootstrap.php"
+        "config/services.yaml"
     ],
     "compression": "GZ"
 }
