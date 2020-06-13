@@ -71,7 +71,7 @@ class TransactionNormalizer extends PropertyNormalizer
         if (false === $time) {
             throw new \RuntimeException(sprintf('Invalid date %1$s given', $data['time']));
         }
-        $data['time'] = $time;
+        $data['time'] = $time->format(\DateTimeInterface::RFC3339);
 
         $matchers = $context['matchers'] ?? [];
         foreach ($matchers as $matcher) {

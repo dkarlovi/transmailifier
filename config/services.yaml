@@ -6,14 +6,14 @@ parameters:
     kernel.secret: transmailifier
 
 framework:
+    mailer:
+        dsn: '%env(string:key:url:key:mailer:yaml:file:CONFIG)%'
+        envelope:
+            sender: '%env(string:key:sender_address:key:mailer:yaml:file:CONFIG)%'
     serializer:
         mapping:
             paths:
                 - "%kernel.project_dir%/config/serializer.yaml"
-
-swiftmailer:
-    url: "%env(string:key:url:key:mailer:yaml:file:CONFIG)%"
-    sender_address: "%env(string:key:sender_address:key:mailer:yaml:file:CONFIG)%"
 
 services:
     _defaults:
