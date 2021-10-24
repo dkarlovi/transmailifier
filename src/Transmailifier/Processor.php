@@ -74,9 +74,12 @@ class Processor
     {
         $transactions = $this->filterProcessedTransactions($ledger);
 
+        // 1. try to mark transactions as processed
+        $connection = $this->storage->markTransactionsProcessed($transactions);
+        // 2. try to notify via mailer
         $this->mailer->notify($transactions, $ledger->getDescription(), $ledger->getNotificationAddresses());
-
-        $this->storage->markTransactionsProcessed($transactions);
+        // 3. if *both* succeeded, flush into the database
+        $this->storage->flush($connection);
     }
 
     /**

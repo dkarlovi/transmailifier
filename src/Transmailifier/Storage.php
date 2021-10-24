@@ -53,7 +53,7 @@ class Storage
     /**
      * @param Transaction[] $transactions
      */
-    public function markTransactionsProcessed(array $transactions): void
+    public function markTransactionsProcessed(array $transactions): \PDO
     {
         $connection = $this->getConnection();
 
@@ -64,12 +64,22 @@ class Storage
         );
 
         foreach ($transactions as $transaction) {
-            $statement->execute([
-                'id' => $transaction->getIdentifier(),
-                'created_at' => $transaction->getTime()->format('c'),
-            ]);
+            try {
+                $statement->execute([
+                    'id' => $transaction->getIdentifier(),
+                    'created_at' => $transaction->getTime()->format('c'),
+                ]);
+            } catch (\PDOException $exception) {
+                var_dump($transaction);
+                throw $exception;
+            }
         }
 
+        return $connection;
+    }
+
+    public function flush(\PDO $connection): void
+    {
         $connection->commit();
     }
 
@@ -100,7 +110,7 @@ class Storage
     private function ensureSchema(\PDO $connection): void
     {
         $schema = [
-            'CREATE TABLE IF NOT EXISTS `transactions` (`id` CHAR(32) PRIMARY KEY, `created_at` DATETIME NOT NULL, `processed_at` DATETIME)',
+            'CREATE TABLE IF NOT EXISTS `transactions` (`id` CHAR(32), `created_at` DATETIME NOT NULL, `processed_at` DATETIME)',
         ];
 
         foreach ($schema as $query) {

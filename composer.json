@@ -11,13 +11,12 @@
         "sort-packages": true
     },
     "require": {
-        "php": "^7.3",
+        "php": "^7.3 | ^8.0",
         "ext-intl": "*",
         "ext-pdo": "*",
         "ext-pdo_sqlite": ">=3.0",
-        "dkarlovi/xezilaires": "^0.3",
-        "dkarlovi/xezilaires-phpspreadsheet": "^0.3",
-        "dkarlovi/xezilaires-symfony": "^0.3",
+        "sigwin/xezilaires-phpspreadsheet": "^0.5.3",
+        "sigwin/xezilaires-symfony": "^0.5.3",
         "symfony/console": "^5.0",
         "symfony/mailer": "^5.0",
         "symfony/yaml": "^5.0"

@@ -15,7 +15,7 @@ phpstan:
 
 box: clean
 	bin/transmailifier > /dev/null
-	box compile --no-restart
+	php -dphar.readonly=0 ~/bin/box compile --no-restart
 
 use:
 	cp bin/transmailifier.phar ~/bin/transmailifier
