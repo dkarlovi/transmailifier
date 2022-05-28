@@ -1,13 +1,14 @@
 parameters:
     env(ROOT): "%env(HOME)%/.config/transmailifier"
     env(CONFIG): "%env(ROOT)%/config.yaml"
+    env(SECRET): "%env(ROOT)%/secret.yaml"
 
     # TODO: Symfony workaround
     kernel.secret: transmailifier
 
 framework:
     mailer:
-        dsn: '%env(string:key:url:key:mailer:yaml:file:CONFIG)%'
+        dsn: '%env(string:key:url:key:mailer:yaml:file:SECRET)%'
         envelope:
             sender: '%env(string:key:sender_address:key:mailer:yaml:file:CONFIG)%'
     serializer:
