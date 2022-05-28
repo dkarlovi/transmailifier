@@ -53,7 +53,7 @@ class Storage
     /**
      * @param Transaction[] $transactions
      */
-    public function markTransactionsProcessed(array $transactions): \PDO
+    public function markTransactionsProcessed(array $transactions, bool $commit = false): \PDO
     {
         $connection = $this->getConnection();
 
@@ -73,6 +73,9 @@ class Storage
                 var_dump($transaction);
                 throw $exception;
             }
+        }
+        if ($commit) {
+            $connection->commit();
         }
 
         return $connection;

@@ -67,7 +67,7 @@ class Processor
      */
     public function markTransactionsProcessed(array $transactions): void
     {
-        $this->storage->markTransactionsProcessed($transactions);
+        $this->storage->markTransactionsProcessed($transactions, true);
     }
 
     public function processUnprocessedTransactions(Ledger $ledger): void

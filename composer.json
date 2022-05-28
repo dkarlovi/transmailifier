@@ -19,6 +19,7 @@
         "sigwin/xezilaires-symfony": "^0.5.3",
         "symfony/console": "^5.0",
         "symfony/mailer": "^5.0",
+        "symfony/sendgrid-mailer": "^5.4",
         "symfony/yaml": "^5.0"
     }
 }
