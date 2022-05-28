@@ -208,14 +208,19 @@ class ProcessCommand extends Command
                 continue;
             }
 
+            $income = $transaction->getAmount() > 0;
+            $cell = static function(?string $value) use ($income): ?string {
+                return $income ? sprintf('<comment>%1$s</comment>', $value) : $value;
+            };
+            
             $table->addRow(
                 [
-                    $transaction->getTime()->format('Y-m-d'),
-                    $formatter($transaction->getAmount()),
-                    // $formatter($transaction->getState()),
-                    $transaction->getCategory(),
-                    $transaction->getPayee(),
-                    $this->truncate($transaction->getNote(), 40),
+                    $cell($transaction->getTime()->format('Y-m-d')),
+                    $cell($formatter($transaction->getAmount())),
+                    // $cell($formatter($transaction->getState())),
+                    $cell($transaction->getCategory()),
+                    $cell($transaction->getPayee()),
+                    $cell($this->truncate($transaction->getNote(), 40)),
                 ]
             );
         }
