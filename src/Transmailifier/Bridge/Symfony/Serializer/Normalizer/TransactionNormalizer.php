@@ -76,8 +76,26 @@ class TransactionNormalizer extends PropertyNormalizer
         $matchers = $context['matchers'] ?? [];
         foreach ($matchers as $matcher) {
             if (0 !== preg_match($matcher['match'], $data['note'])) {
-                $data = array_replace($data, $matcher['values']);
-                break;
+                if (isset($matcher['amount'])) {
+                    if (is_numeric($matcher['amount']) && $matcher['amount'] == $data['amount']) {
+                        $data = array_replace($data, $matcher['values']);
+                        break;
+                    }
+                    
+                    if (is_array($matcher['amount'])) {
+                        if (!(isset($matcher['amount']['min']) || isset($matcher['amount']['max']))) {
+                            throw new \LogicException('At least one of "amount.min" or "amount.max" (or both) need to be set');
+                        }
+                        
+                        if (($matcher['amount']['min'] ?? PHP_INT_MIN) <= $data['amount'] && $data['amount'] <= ($matcher['amount']['max'] ?? PHP_INT_MAX)) {
+                            $data = array_replace($data, $matcher['values']);
+                            break;
+                        }
+                    }
+                } else {
+                    $data = array_replace($data, $matcher['values']);
+                    break;
+                }
             }
         }
 
