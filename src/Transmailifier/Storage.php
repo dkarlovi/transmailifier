@@ -36,13 +36,13 @@ class Storage
     /**
      * @return Transaction[]
      */
-    public function filterProcessedTransactions(iterable $ledger): array
+    public function filterProcessedTransactions(iterable $ledger, bool $reprocess): array
     {
         $unprocessed = [];
 
         /** @var Transaction $transaction */
         foreach ($ledger as $transaction) {
-            if (false === $this->isTransactionProcessed($transaction)) {
+            if ($reprocess === true || false === $this->isTransactionProcessed($transaction)) {
                 $unprocessed[] = $transaction;
             }
         }

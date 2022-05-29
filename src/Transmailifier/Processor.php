@@ -70,9 +70,9 @@ class Processor
         $this->storage->markTransactionsProcessed($transactions, true);
     }
 
-    public function processUnprocessedTransactions(Ledger $ledger): void
+    public function processUnprocessedTransactions(Ledger $ledger, bool $reprocess): void
     {
-        $transactions = $this->filterProcessedTransactions($ledger);
+        $transactions = $this->filterProcessedTransactions($ledger, $reprocess);
 
         // 1. try to mark transactions as processed
         $connection = $this->storage->markTransactionsProcessed($transactions);
@@ -85,8 +85,8 @@ class Processor
     /**
      * @return Transaction[]
      */
-    public function filterProcessedTransactions(Ledger $ledger): array
+    public function filterProcessedTransactions(Ledger $ledger, bool $reprocess = false): array
     {
-        return $this->storage->filterProcessedTransactions($ledger);
+        return $this->storage->filterProcessedTransactions($ledger, $reprocess);
     }
 }

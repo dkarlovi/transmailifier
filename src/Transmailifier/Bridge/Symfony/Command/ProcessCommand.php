@@ -56,6 +56,7 @@ class ProcessCommand extends Command
             ->addArgument('profile', InputArgument::REQUIRED, 'Processing profile to use')
             ->addArgument('path', InputArgument::REQUIRED, 'File to processUnprocessedTransactions')
             ->addOption('all', 'a', InputOption::VALUE_NONE, 'Preview all transactions instead just a selected few')
+            ->addOption('reprocess', 'R', InputOption::VALUE_NONE, 'Reconsider all transactions for re-processing, ignoring the fact they were previously processed')
             ->addOption('skip', null, InputOption::VALUE_OPTIONAL, 'Mark all transactions before this date as skipped');
     }
 
@@ -70,6 +71,8 @@ class ProcessCommand extends Command
         $profile = $input->getArgument('profile');
         /** @var bool $all */
         $all = $input->getOption('all');
+        /** @var bool $reprocess */
+        $reprocess = $input->getOption('reprocess');
         /** @var string $profile */
         $skip = $input->getOption('skip');
 
@@ -99,7 +102,7 @@ class ProcessCommand extends Command
 
         // TODO: header with profile name, where to send, etc
 
-        $unprocessedTransactions = $this->processor->filterProcessedTransactions($ledger);
+        $unprocessedTransactions = $this->processor->filterProcessedTransactions($ledger, $reprocess);
         $unprocessedTransactionsCount = \count($unprocessedTransactions);
 
         if (0 === $unprocessedTransactionsCount) {
@@ -122,7 +125,7 @@ class ProcessCommand extends Command
             $this->previewUnprocessedTransactions($output, $style, $currencyFormatter, $unprocessedTransactions, ($all ? \count($unprocessedTransactions) : 10));
 
             if (true === $style->confirm(\sprintf('Process these %1$d transactions?', $unprocessedTransactionsCount))) {
-                $this->processor->processUnprocessedTransactions($ledger);
+                $this->processor->processUnprocessedTransactions($ledger, $reprocess);
 
                 $style->success(\sprintf('Successfully processed %1$d new transactions.', $unprocessedTransactionsCount));
             } else {
@@ -208,9 +211,12 @@ class ProcessCommand extends Command
                 continue;
             }
 
-            $income = $transaction->getAmount() > 0;
-            $cell = static function(?string $value) use ($income): ?string {
-                return $income ? sprintf('<comment>%1$s</comment>', $value) : $value;
+            $cell = static function(?string $value) use ($transaction): ?string {
+                if ($transaction->hasCategory() === false) {
+                    return sprintf('<error>%1$s</error>', $value);
+                }
+                
+                return $transaction->getAmount() > 0 ? sprintf('<comment>%1$s</comment>', $value) : $value;
             };
             
             $table->addRow(
